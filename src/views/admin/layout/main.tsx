@@ -6,7 +6,7 @@ import Footer from 'features/layout/footer'
 
 export default function AdminLayout(){
   return (
-    <Container maxWidth={ false } disableGutters sx={{display: 'flex'}}>
+    <Container maxWidth={ false } disableGutters sx={{display: 'flex', flexDirection: 'column'}}>
       <AppBar/>
       <AppDrawer/>
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>

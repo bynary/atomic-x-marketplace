@@ -9,10 +9,10 @@ export default function MarketplaceLayout(){
       <Container maxWidth={false} disableGutters sx={{ display: 'flex', minHeight: '10vh', flexDirection: 'column', position: 'static' }}>
         <AppBar />
       </Container>
-      <Container maxWidth={ false }>
+      <Container maxWidth={ false } sx={{ minHeight: '80vh' }}>
         <Outlet/>
       </Container>
-      <Container maxWidth={ false } disableGutters sx={{ display: 'flex', flexDirection: 'column', position: 'absolute', bottom: 0 }}>
+      <Container maxWidth={ false } disableGutters sx={{ display: 'flex', flexDirection: 'column', minHeight: '10vh' }}>
         <Footer/>
       </Container> 
     </Container>

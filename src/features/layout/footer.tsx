@@ -18,7 +18,7 @@ export default function Footer(){
                         </Grid>
                     </Grid>
                 </Grid>
-                <Grid item xs={6} sm={6} md={6} lg={6} xl={6} textAlign="center">
+                <Grid item xs={8} sm={8} md={8} lg={8} xl={8} textAlign="center">
                     <Grid container spacing={2}>
                         <Grid item xs={4} sm={4} md={4} lg={4} xl={4} textAlign="right">
                             <Link href="">

@@ -1,12 +1,23 @@
 import * as React from 'react'
+
+// Project infrastructure imports
 import { useAppSelector } from 'store/hooks'
 import { selectNetwork } from 'store/network/networkSlice'
 import { selectUser } from 'store/profile/profileSlice'
-import ImxClient from 'services/imxClient'
+
+// Third-party library imports
 import { Alert, Box, Button, Divider, FormControl, Grid, InputLabel, MenuItem, Select, Tooltip, Typography } from '@mui/material'
 import { BackspaceRounded } from '@mui/icons-material'
+import InfiniteScroll from 'react-infinite-scroller'
+
+// IMX imports
+import ImxClient from 'services/imxClient'
 import { ImmutableMethodParams, ImmutableOrderStatus } from '@imtbl/imx-sdk'
-import ProjectCard from './projectCard'
+
+// Internal project imports
+import Collection from 'classes/collection'
+import CollectionCard from './collectionCard'
+import CollectionDetail from './collectionDetail'
 import NftCard from './nftCard'
 import CardSkeleton from './cardSkeleton'
 import Asset from 'types/asset.class'
@@ -18,6 +29,11 @@ import BuySuccess from './buySuccess'
 export default function NftSale(){
   const selectedNetwork = useAppSelector(selectNetwork)
   const user = useAppSelector (selectUser)
+
+  const [collections, setCollections] = React.useState<any[] | null>(null)
+  const [collectionsCursor, setCollectionsCursor] = React.useState<string>("")
+  const [remainingCollections, setRemainingCollections] = React.useState<number>(0)
+  const [selectedCollection, setSelectedCollection] = React.useState<Collection>(new Collection())
 
   const [baseOrders, setBaseOrders] = React.useState<any[] | null>(null)
   const [orders, setOrders] = React.useState<any[]|null>(null)
@@ -33,6 +49,10 @@ export default function NftSale(){
   const [showSuccessfulBuy, setShowSuccessfulBuy] = React.useState<boolean>(false)
 
   const load = React.useCallback( async() =>{
+    /* ------------------------------------------
+    /    Load all assets for the connected 
+    /    IMX wallet address
+    /------------------------------------------ */
     async function loadAssets(){
       const imx = await ImxClient()
       let remaining = 0
@@ -85,10 +105,35 @@ export default function NftSale(){
 
     if(!isLoaded){
       //await loadAssets()
+      await loadCollections()
       setIsLoaded(true)
     }
   },[isLoaded,selectedNetwork?.landContractAddress])
 
+  /* ------------------------------------------
+  /   Load all collections from IMX
+  / ------------------------------------------ */
+  async function loadCollections(){
+    const imx = await ImxClient()
+
+    var response = await imx.client.getCollections({
+      page_size: 10,
+      cursor: collectionsCursor
+    })
+
+    if (!collections)
+    {
+      setCollections(response.result)
+    } else {
+      setCollections(collections.concat(response.result))
+    }    
+    setCollectionsCursor(response.cursor)
+    setRemainingCollections(response.remaining as number)
+  }
+
+  /* ------------------------------------------
+  /   Handle the sort selection
+  / ------------------------------------------ */
   const handleSortSelection = (sortType: string | null) => {
     setSortSelection(sortType)
 
@@ -116,6 +161,10 @@ export default function NftSale(){
     setOrders(sortedOrders)
   }
 
+  /* ------------------------------------------
+  /   Apply the selected filters to
+  /   the collection's orders
+  / ------------------------------------------ */
   const filterOrders = () => {
     let ordersCopy = _.cloneDeep(baseOrders)
 
@@ -126,7 +175,18 @@ export default function NftSale(){
       setOrders(filteredOrders)
     }
   }
+  
+  /* ------------------------------------------
+  /   Clear the selected filters
+  / ------------------------------------------ */
+  const clearFilters = () => {
+    setOrders(baseOrders)
+    setIsFiltered(false)
+  }
 
+  /* ------------------------------------------
+  /   Handle a successful purchase order
+  / ------------------------------------------ */
   const handleSuccessfulBuy = (id: any) => {
     if (orders && orders?.length > 0) {
 
@@ -139,14 +199,11 @@ export default function NftSale(){
     }
   }
 
+  /* ------------------------------------------
+  /   Handle a successful purchase order
+  / ------------------------------------------ */
   const handleSuccessfulBuyClose = () => {
-    console.log("close?: ", "Yes!")
     setShowSuccessfulBuy(false)
-  }
-
-  const clearFilters = () => {
-    setOrders(baseOrders)
-    setIsFiltered(false)
   }
 
   const showCardInfo = (item: any) => {
@@ -160,7 +217,6 @@ export default function NftSale(){
   }
 
   const cardStyle = {
-    paddingRight: '20px',
     maxHeight: '820px', 
     overflowY: 'auto'
   }
@@ -194,7 +250,8 @@ export default function NftSale(){
       <Grid container
         direction="row"
         justifyContent="flex-start"
-        alignItems="flex-start">
+        alignItems="flex-start"
+        columnSpacing={2}>
         <Grid item
           xs={12} sm={12} md={12} lg={12} xl={12}>
           <Grid container direction="row"                          
@@ -206,16 +263,39 @@ export default function NftSale(){
           </Grid>
         </Grid>
         <Grid item
-          xs={6} sm={6} md={4} lg={4} xl={4}>
-          
+          xs={6} sm={6} md={4} lg={4} xl={4}
+          sx={{ height: '100%',
+            overflowY: 'auto'}}>
+          <Grid container>
+            <Grid item
+                xs={12} sm={12} md={12} lg={12} xl={12}
+                sx={{ paddingLeft: "10px", 
+                    border: '1px', 
+                    backgroundColor: 'rgba(255,255,255,0.1)'}}>
+                <InfiniteScroll
+                  pageStart={0}
+                  loadMore={loadCollections}
+                  hasMore={remainingCollections > 0}>
+                  <Grid container direction="column" paddingTop="10px">
+                    {collections?.map((collection, i) => (
+                      <Grid item xs={3} sm={3} md={3} lg={3} xl={3} key={i}>
+                        <CollectionCard collection={collection} />
+                      </Grid>
+                    ))}
+                  </Grid>
+                </InfiniteScroll>
+              </Grid>
+          </Grid>
         </Grid>
         <Grid item
-          xs={6} sm={6} md={8} lg={8} xl={8}>
+          xs={6} sm={6} md={8} lg={8} xl={8}
+          sx={{ position: 'sticky',
+                top: '1rem'}}>
           <Grid container>
             <Grid item
               xs={12} sm={12} md={12} lg={12} xl={12}
               sx={{padding: "20px", border: '1px', backgroundColor: '#131313' }}>
-                <ProjectCard item="text"/>
+                <CollectionDetail collection={selectedCollection} />
             </Grid>
             <Grid item
             xs={12} sm={12} md={12} lg={12} xl={12}
