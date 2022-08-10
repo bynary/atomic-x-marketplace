@@ -14,7 +14,7 @@ export default function CollectionDetail (props:collectionDetailProps){
                 }}}>
                 <Grid item
                     xs={4} sm={4} md={4} lg={4} xl={4}>
-                    <img src={ props.collection.collection_image_url } width="50px" />
+                    <img src={ props.collection.collection_image_url } width="200px" />
                 </Grid>
                 <Grid item
                     xs={8} sm={8} md={8} lg={8} xl={8}>

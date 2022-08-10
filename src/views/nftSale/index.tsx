@@ -12,7 +12,7 @@ import InfiniteScroll from 'react-infinite-scroller'
 
 // IMX imports
 import ImxClient from 'services/imxClient'
-import { ImmutableMethodParams, ImmutableOrderStatus } from '@imtbl/imx-sdk'
+import { ImmutableAssetStatus, ImmutableMethodParams, ImmutableOrderStatus } from '@imtbl/imx-sdk'
 
 // Internal project imports
 import Collection from 'classes/collection'
@@ -25,6 +25,7 @@ import assetApi from 'api/asset'
 import _ from 'lodash'
 import ScrollToTopButton from 'features/controls/scrollToTop'
 import BuySuccess from './buySuccess'
+import collection from 'classes/collection'
 
 export default function NftSale(){
   const selectedNetwork = useAppSelector(selectNetwork)
@@ -37,6 +38,8 @@ export default function NftSale(){
 
   const [baseOrders, setBaseOrders] = React.useState<any[] | null>(null)
   const [orders, setOrders] = React.useState<any[]|null>(null)
+  const [ordersCursor, setOrdersCursor] = React.useState<string>("")
+  const [remainingOrders, setRemainingOrders] = React.useState<number>(0)
   const [isLoaded, setIsLoaded] = React.useState<boolean>(false)
   const [skeletons, setSkeletons] = React.useState<string[]>([''])
 
@@ -49,60 +52,6 @@ export default function NftSale(){
   const [showSuccessfulBuy, setShowSuccessfulBuy] = React.useState<boolean>(false)
 
   const load = React.useCallback( async() =>{
-    /* ------------------------------------------
-    /    Load all assets for the connected 
-    /    IMX wallet address
-    /------------------------------------------ */
-    async function loadAssets(){
-      const imx = await ImxClient()
-      let remaining = 0
-      let skeletonCount = 100
-      let placeholders: string[] = ['']
-      let cursor
-      let results: any[] = []
-
-      do {
-        placeholders.push('')
-        skeletonCount--
-      } while (skeletonCount > 0)
-
-      setSkeletons(placeholders)
-  
-      do {
-        //ToDo: add paging  
-        setIsLoaded(false)
-        try{
-        let request: any = await imx.client.getOrders({ 
-          status:ImmutableOrderStatus.active, 
-          sell_token_address: selectedNetwork?.landContractAddress, 
-          order_by:'buy_quantity', 
-          direction: ImmutableMethodParams.ImmutableSortOrder.asc, 
-          cursor: cursor }
-        )
-  
-        results = results.concat(request.result)
-        cursor = request.cursor
-        remaining = request.remaining
-        }
-        catch(e){
-          console.log('could not load orders',e)
-          remaining = 0
-        }
-      } while (remaining > 0)
-  
-      results.forEach((result, index) => {  
-        const asset = new Asset(result.sell.data.token_id, result.sell.data.properties.collection.name)
-        assetApi.getAssetMetadata(asset).then((response) => {
-          results[index].ut_metadata = response
-          console.log(results[index])
-        })
-      })
-  
-      setBaseOrders(results)
-      setOrders(results)
-      setIsLoaded(true)
-    }
-
     if(!isLoaded){
       //await loadAssets()
       await loadCollections()
@@ -111,14 +60,53 @@ export default function NftSale(){
   },[isLoaded,selectedNetwork?.landContractAddress])
 
   /* ------------------------------------------
-  /   Load all collections from IMX
+  /    Load all assets for the connected 
+  /    IMX wallet address
+  /------------------------------------------ */
+  async function loadAssets(collectionAddress: string){
+    const imx = await ImxClient()
+
+    let placeholders: string[] = ['']
+    let skeletonCount = 10
+    
+    do {
+      placeholders.push('')
+      skeletonCount--
+    } while (skeletonCount > 0)
+
+    setSkeletons(placeholders)
+
+    var response = await imx.client.getOrders({
+      status: ImmutableOrderStatus.active,
+      sell_token_address: collectionAddress,
+      page_size: 24,
+      cursor: ordersCursor,
+      order_by: "id",
+      direction: ImmutableMethodParams.ImmutableSortOrder.asc
+    })
+
+    if (!orders){
+      setOrders(response.result)
+    } else {
+      setOrders(orders.concat(response.result))
+    }
+
+    setOrdersCursor(response.cursor)
+    setRemainingOrders(response.remaining as number)
+
+  }
+
+  /* ------------------------------------------
+  /   Load collections in increments of 10 from IMX
   / ------------------------------------------ */
   async function loadCollections(){
     const imx = await ImxClient()
 
     var response = await imx.client.getCollections({
-      page_size: 10,
-      cursor: collectionsCursor
+      page_size: 24,
+      cursor: collectionsCursor,
+      order_by: "name",
+      direction: ImmutableMethodParams.ImmutableSortOrder.asc
     })
 
     if (!collections)
@@ -127,8 +115,15 @@ export default function NftSale(){
     } else {
       setCollections(collections.concat(response.result))
     }    
+
     setCollectionsCursor(response.cursor)
     setRemainingCollections(response.remaining as number)
+  }
+
+  function showCollectionInfo(collection: Collection){
+    setOrders(null)
+    setSelectedCollection(collection)
+    loadAssets(collection.address)
   }
 
   /* ------------------------------------------
@@ -251,7 +246,8 @@ export default function NftSale(){
         direction="row"
         justifyContent="flex-start"
         alignItems="flex-start"
-        columnSpacing={2}>
+        columnSpacing={2}
+        sx={{ marginTop: '10px' }}>
         <Grid item
           xs={12} sm={12} md={12} lg={12} xl={12}>
           <Grid container direction="row"                          
@@ -277,8 +273,8 @@ export default function NftSale(){
                   loadMore={loadCollections}
                   hasMore={remainingCollections > 0}>
                   <Grid container direction="column" paddingTop="10px">
-                    {collections?.map((collection, i) => (
-                      <Grid item xs={3} sm={3} md={3} lg={3} xl={3} key={i}>
+                    {collections?.map((collection: Collection, i) => (
+                      <Grid item xs={3} sm={3} md={3} lg={3} xl={3} key={i} onClick={() => showCollectionInfo(collection)}>
                         <CollectionCard collection={collection} />
                       </Grid>
                     ))}
@@ -291,13 +287,13 @@ export default function NftSale(){
           xs={6} sm={6} md={8} lg={8} xl={8}
           sx={{ position: 'sticky',
                 top: '1rem'}}>
-          <Grid container>
+          <Grid container direction="column">
             <Grid item
               xs={12} sm={12} md={12} lg={12} xl={12}
               sx={{padding: "20px", border: '1px', backgroundColor: '#131313' }}>
                 <CollectionDetail collection={selectedCollection} />
             </Grid>
-            <Grid item
+            {/* <Grid item
             xs={12} sm={12} md={12} lg={12} xl={12}
             sx={{padding: "20px", backgroundColor: '#131313' }}>
               <Typography align='left' variant='overline' sx={{color: "#e1e1e0"}}>
@@ -348,9 +344,13 @@ export default function NftSale(){
                 </Grid>
               </Grid>
               <Divider orientation="vertical" flexItem />
-            </Grid>
+            </Grid> */}
             <Grid item 
-              xs={12} sm={12} md={12} lg={12} xl={12}>
+              xs={12} sm={12} md={12} lg={12} xl={12}
+              sx={{ marginTop: '20px',
+                    height: '100%',
+                    border: '1px', 
+                    backgroundColor: 'rgba(255,255,255,0.1)' }}>
               {isFiltered && orders?.length === 0 && <Grid container direction="row" justifyContent="center" sx={{marginTop: '10vh'}}>
                 <Grid item>
                   <Alert severity="info">Hmmm...we couldn't find anything that matches your filter selection. Clear your filter selections or try a different filter combination.</Alert>
