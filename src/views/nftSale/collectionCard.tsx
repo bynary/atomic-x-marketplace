@@ -1,4 +1,4 @@
-import { Grid, Tooltip, Typography } from '@mui/material'
+import { Grid, Skeleton, Typography } from '@mui/material'
 import Collection from 'classes/collection'
 
 export interface collectionCardProps{
@@ -15,7 +15,12 @@ export interface collectionCardProps{
                 }}}>
                 <Grid item
                     xs={4} sm={4} md={4} lg={4} xl={4}>
-                    <img src={ props.collection.icon_url } width="50px" />
+                    {props.collection ? (
+                        <img src={ props.collection.icon_url } alt={ `${props.collection.name} Collection Image` } width="50px" />
+                    ) : (
+                        <Skeleton variant="rectangular" width={50} height={50} />
+                    )
+                    }
                 </Grid>
                 <Grid item
                     xs={8} sm={8} md={8} lg={8} xl={8}>

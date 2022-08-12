@@ -7,7 +7,8 @@ import { createTheme } from '@mui/material/styles'
 
 const theme = createTheme({
   typography: {
-    fontFamily: '"Rajdhani", "sans-serif"'
+    fontFamily: '"Rajdhani", "sans-serif"',
+    fontSize: "1em"
   },
   components: {
     MuiCssBaseline: {

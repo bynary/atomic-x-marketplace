@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { ethers, BigNumber } from 'ethers'
 import ImxClient from 'services/imxClient'
-// import Network from 'features/settings/networkSwitcher'
+import Network from 'features/settings/networkSwitcher'
 import Founder from 'features/status/founder'
 import { ImmutableAssetStatus } from '@imtbl/imx-sdk'
 import { useAppSelector, useAppDispatch } from 'store/hooks'
@@ -227,12 +227,12 @@ export default function ProfileIndex(){
           </Grid>
         </Grid>} */}
       </Grid>}
-      {/* <h2>Network/Environment</h2>
+      <h2>Network/Environment</h2>
       <ul className="list">
         <li><Network/></li>
         <li>IMX Link Address: {selectedNetwork?.linkAddress}</li>
         <li>IMX API Address: {selectedNetwork?.apiAddress}</li>
-      </ul> */}
+      </ul>
     </div>
   )
 }

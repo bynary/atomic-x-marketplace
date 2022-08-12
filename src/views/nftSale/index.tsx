@@ -6,13 +6,12 @@ import { selectNetwork } from 'store/network/networkSlice'
 import { selectUser } from 'store/profile/profileSlice'
 
 // Third-party library imports
-import { Alert, Box, Button, Divider, FormControl, Grid, InputLabel, MenuItem, Select, Tooltip, Typography } from '@mui/material'
-import { BackspaceRounded } from '@mui/icons-material'
+import { Alert, Box, Grid } from '@mui/material'
 import InfiniteScroll from 'react-infinite-scroller'
 
 // IMX imports
 import ImxClient from 'services/imxClient'
-import { ImmutableAssetStatus, ImmutableMethodParams, ImmutableOrderStatus } from '@imtbl/imx-sdk'
+import { ImmutableMethodParams, ImmutableOrderStatus } from '@imtbl/imx-sdk'
 
 // Internal project imports
 import Collection from 'classes/collection'
@@ -20,12 +19,9 @@ import CollectionCard from './collectionCard'
 import CollectionDetail from './collectionDetail'
 import NftCard from './nftCard'
 import CardSkeleton from './cardSkeleton'
-import Asset from 'types/asset.class'
-import assetApi from 'api/asset'
 import _ from 'lodash'
 import ScrollToTopButton from 'features/controls/scrollToTop'
 import BuySuccess from './buySuccess'
-import collection from 'classes/collection'
 
 export default function NftSale(){
   const selectedNetwork = useAppSelector(selectNetwork)
@@ -79,10 +75,7 @@ export default function NftSale(){
     var response = await imx.client.getOrders({
       status: ImmutableOrderStatus.active,
       sell_token_address: collectionAddress,
-      page_size: 24,
-      cursor: ordersCursor,
-      order_by: "id",
-      direction: ImmutableMethodParams.ImmutableSortOrder.asc
+      page_size: 10
     })
 
     if (!orders){
@@ -103,14 +96,13 @@ export default function NftSale(){
     const imx = await ImxClient()
 
     var response = await imx.client.getCollections({
-      page_size: 24,
+      page_size: 5,
       cursor: collectionsCursor,
       order_by: "name",
       direction: ImmutableMethodParams.ImmutableSortOrder.asc
     })
 
-    if (!collections)
-    {
+    if (!collections){
       setCollections(response.result)
     } else {
       setCollections(collections.concat(response.result))
@@ -121,7 +113,9 @@ export default function NftSale(){
   }
 
   function showCollectionInfo(collection: Collection){
+    console.log("Before resetting orders", orders)
     setOrders(null)
+    console.log("After resetting orders", orders)
     setSelectedCollection(collection)
     loadAssets(collection.address)
   }
@@ -366,9 +360,14 @@ export default function NftSale(){
                   </Grid>
                 ))}
                 {orders?.map((item, i) => (
-                  <Grid item xs={3} sm={3} md={3} lg={3} xl={3} key={i}>
-                    <NftCard item={item} showCardInfo={showCardInfo} clearCardInfo={clearCardInfo} handleSuccessfulBuy={handleSuccessfulBuy} />
-                  </Grid>
+                  <InfiniteScroll
+                  pageStart={0}
+                  loadMore={loadAssets}
+                  hasMore={remainingOrders > 0}>
+                    <Grid item xs={3} sm={3} md={3} lg={3} xl={3} key={i}>
+                      <NftCard item={item} showCardInfo={showCardInfo} clearCardInfo={clearCardInfo} handleSuccessfulBuy={handleSuccessfulBuy} />
+                    </Grid>
+                  </InfiniteScroll>
                 ))}
               </Grid>
             </Grid>

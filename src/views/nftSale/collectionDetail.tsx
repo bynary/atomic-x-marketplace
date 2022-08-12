@@ -8,10 +8,7 @@ export interface collectionDetailProps{
 export default function CollectionDetail (props:collectionDetailProps){
     return(
         <div>
-            <Grid container sx={{":hover": {
-                    boxShadow: 8,
-                    backgroundColor: "rgb(255,255,255,0.2)"
-                }}}>
+            <Grid container>
                 <Grid item
                     xs={4} sm={4} md={4} lg={4} xl={4}>
                     <img src={ props.collection.collection_image_url } width="200px" />
